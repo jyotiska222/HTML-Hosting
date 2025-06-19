@@ -1,0 +1,143 @@
+<!-- dashboard.html -->
+
+{% extends "base.html" %}
+
+{% block title %}Dashboard - HTML Host{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="dashboard-header">
+        <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+        <p>Manage your hosted HTML files</p>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="upload-card">
+            <div class="card-header">
+                <h2><i class="fas fa-cloud-upload-alt"></i> Upload New File</h2>
+            </div>
+            <div class="card-content">
+                <form method="POST" action="{{ url_for('upload_file') }}" enctype="multipart/form-data" class="upload-form">
+                    <div class="file-input-wrapper">
+                        <input type="file" name="file" id="file" accept=".html,.htm" required>
+                        <label for="file" class="file-label">
+                            <i class="fas fa-file-code"></i>
+                            <span class="upload-text">Choose HTML File</span>
+                        </label>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-upload"></i> Upload & Host
+                    </button>
+                </form>
+
+                <div class="upload-info">
+                    <h3><i class="fas fa-info-circle"></i> Upload Guidelines</h3>
+                    <ul>
+                        <li>Accepted formats: .html, .htm</li>
+                        <li>Maximum file size: 16MB</li>
+                        <li>Files are private to your account</li>
+                        <li>Get instant hosting URL after upload</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="files-card">
+            <div class="card-header">
+                <h2><i class="fas fa-folder-open"></i> Your Files</h2>
+            </div>
+            <div class="card-content">
+                {% set user = get_user_by_username(session['username']) %}
+                {% if user and user.files %}
+                    <div class="files-list">
+                        {% for file in user.files %}
+                            <div class="file-item">
+                                <div class="file-info">
+                                    <i class="fas fa-file-code"></i>
+                                    <span class="file-name">{{ file.original_name }}</span>
+                                </div>                                <div class="file-actions">
+                                    <a href="{{ url_for('serve_file', filename=file.stored_name) }}" 
+                                       target="_blank" 
+                                       class="btn btn-secondary btn-sm">
+                                        <i class="fas fa-external-link-alt"></i> View
+                                    </a>
+                                    <button class="btn btn-danger btn-sm delete-btn"
+                                            data-filename="{{ file.stored_name }}"
+                                            data-original-name="{{ file.original_name }}">
+                                        <i class="fas fa-trash-alt"></i> Delete
+                                    </button>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-folder-open"></i>
+                        <p>You haven't uploaded any files yet.</p>
+                        <p>Upload your first HTML file to get started!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>    // File input enhancement
+    const fileInput = document.getElementById('file');
+    const fileLabel = document.querySelector('.upload-text');
+    
+    fileInput.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            fileLabel.textContent = this.files[0].name;
+        } else {
+            fileLabel.textContent = 'Choose HTML File';
+        }
+    });
+
+    // Delete file functionality
+    document.querySelectorAll('.delete-btn').forEach(button => {
+        button.addEventListener('click', async function() {
+            const filename = this.dataset.filename;
+            const originalName = this.dataset.originalName;
+            
+            if (confirm(`Are you sure you want to delete "${originalName}"?`)) {
+                try {
+                    const response = await fetch('{{ url_for("delete_file") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: new URLSearchParams({
+                            filename: filename
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // Remove the file item from the UI
+                        this.closest('.file-item').remove();
+                        
+                        // If no files left, show empty state
+                        const filesList = document.querySelector('.files-list');
+                        if (!filesList.children.length) {
+                            filesList.innerHTML = `
+                                <div class="empty-state">
+                                    <i class="fas fa-folder-open"></i>
+                                    <p>You haven't uploaded any files yet.</p>
+                                    <p>Upload your first HTML file to get started!</p>
+                                </div>
+                            `;
+                        }
+                    } else {
+                        alert(data.error || 'Failed to delete file');
+                    }
+                } catch (error) {
+                    alert('Error deleting file: ' + error);
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

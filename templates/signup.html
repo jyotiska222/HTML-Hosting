@@ -1,0 +1,134 @@
+<!-- signup.html -->
+
+
+{% extends "base.html" %}
+
+{% block title %}Sign Up - HTML Host{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-logo">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <h1>HTML Host</h1>
+            </div>
+            <div class="auth-welcome">
+                <h2><i class="fas fa-user-plus"></i> Create Account</h2>
+                <p>Join HTML Host and start hosting your web pages</p>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('signup') }}" class="auth-form">
+            <div class="form-group">
+                <label for="username">
+                    <i class="fas fa-user"></i>
+                    Choose Username
+                </label>
+                <input type="text" 
+                       id="username" 
+                       name="username" 
+                       placeholder="Enter desired username"
+                       required
+                       autocomplete="username"
+                       pattern="[a-zA-Z0-9_-]{3,20}"
+                       title="Username must be 3-20 characters long and can only contain letters, numbers, underscores, and hyphens">
+            </div>
+            <div class="form-group">
+                <label for="password">
+                    <i class="fas fa-lock"></i>
+                    Create Password
+                </label>
+                <div class="password-input-group">
+                    <input type="password" 
+                           id="password" 
+                           name="password" 
+                           placeholder="Create a strong password"
+                           required
+                           autocomplete="new-password"
+                           pattern=".{8,}"
+                           title="Password must be at least 8 characters long">
+                    <button type="button" class="password-toggle" aria-label="Toggle password visibility">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <div class="password-strength-meter">
+                    <div class="meter-bar"></div>
+                    <span class="meter-text">Password strength: Too weak</span>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary auth-submit">
+                <i class="fas fa-user-plus"></i>
+                Create Account
+            </button>
+        </form>
+
+        <div class="auth-links">
+            <p>
+                Already have an account? 
+                <a href="{{ url_for('login') }}" class="login-link">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Login here
+                </a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Password visibility toggle
+    document.querySelector('.password-toggle').addEventListener('click', function() {
+        const passwordInput = document.getElementById('password');
+        const icon = this.querySelector('i');
+        
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    });
+
+    // Password strength meter
+    document.getElementById('password').addEventListener('input', function() {
+        const password = this.value;
+        const meterBar = document.querySelector('.meter-bar');
+        const meterText = document.querySelector('.meter-text');
+        
+        // Calculate password strength
+        let strength = 0;
+        if (password.length >= 8) strength += 25;
+        if (password.match(/[a-z]/)) strength += 25;
+        if (password.match(/[A-Z]/)) strength += 25;
+        if (password.match(/[0-9]/)) strength += 25;
+        
+        // Update meter
+        meterBar.style.width = strength + '%';
+        meterBar.style.backgroundColor = 
+            strength <= 25 ? '#f56565' :
+            strength <= 50 ? '#ed8936' :
+            strength <= 75 ? '#ecc94b' :
+            '#48bb78';
+            
+        meterText.textContent = 'Password strength: ' + 
+            (strength <= 25 ? 'Too weak' :
+             strength <= 50 ? 'Weak' :
+             strength <= 75 ? 'Good' :
+             'Strong');
+    });
+</script>
+{% endblock %}

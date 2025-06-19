@@ -1,0 +1,24 @@
+{
+    "users": [
+        {
+            "username": "jyotiska",
+            "password": "pbkdf2:sha256:600000$vX3z8E5QqB1KNvr9$9b4881e4d90e3b64f6b8c3bab02a055454227fa9d702c81dc5c092fe7b0f011a",
+            "files": [
+                {
+                    "original_name": "format.html",
+                    "stored_name": "c35aa689_format.html"
+                }
+            ]
+        },
+        {
+            "username": "abc",
+            "password": "pbkdf2:sha256:600000$0VZP5eM1OvJMRfGI$44b907fd0c7fb321312bd44c6c22407e336c2cdd7c73f73799b816723add1ee8",
+            "files": [
+                {
+                    "original_name": "simple_html.html",
+                    "stored_name": "18d2446f_simple_html.html"
+                }
+            ]
+        }
+    ]
+}

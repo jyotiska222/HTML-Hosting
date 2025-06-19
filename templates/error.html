@@ -1,0 +1,39 @@
+<!-- error.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error - HTML Hosting Service</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌐 HTML Hosting Service</h1>
+        </header>
+
+        <main>
+            <div class="error-section">
+                <div class="error-icon">❌</div>
+                <h2>Oops! Something went wrong</h2>
+                <p class="error-message">{{ error_message or "An unexpected error occurred." }}</p>
+                
+                <div class="action-buttons">
+                    <a href="{{ url_for('index') }}" class="btn btn-primary">
+                        🏠 Go Home
+                    </a>
+                    <button onclick="history.back()" class="btn btn-secondary">
+                        ⬅️ Go Back
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2024 HTML Hosting Service</p>
+        </footer>
+    </div>
+</body>
+</html>

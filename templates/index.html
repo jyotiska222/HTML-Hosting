@@ -1,0 +1,145 @@
+<!-- index.html -->
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="hero">
+    <div class="hero-content">
+        <h1>Welcome to HTML Host</h1>
+        <p class="hero-subtitle">Simple, secure, and instant hosting for your HTML files</p>
+        {% if 'username' not in session %}
+            <div class="hero-buttons">
+                <a href="{{ url_for('signup') }}" class="btn btn-primary">
+                    <i class="fas fa-rocket"></i> Get Started
+                </a>
+                <a href="{{ url_for('login') }}" class="btn btn-secondary">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </a>
+            </div>
+        {% else %}
+            <div class="hero-buttons">
+                <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+                    <i class="fas fa-tachometer-alt"></i> Go to Dashboard
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<section class="features">
+    <h2>Why Choose HTML Host?</h2>
+    <div class="features-grid">
+        <div class="feature-card">
+            <i class="fas fa-shield-alt"></i>
+            <h3>Secure Hosting</h3>
+            <p>Your files are protected with user authentication and private access controls</p>
+        </div>
+        <div class="feature-card">
+            <i class="fas fa-bolt"></i>
+            <h3>Instant Upload</h3>
+            <p>Upload your HTML files and get an instant hosting link</p>
+        </div>
+        <div class="feature-card">
+            <i class="fas fa-user-lock"></i>
+            <h3>Private Access</h3>
+            <p>Only you can access and manage your hosted files</p>
+        </div>
+        <div class="feature-card">
+            <i class="fas fa-share-alt"></i>
+            <h3>Easy Sharing</h3>
+            <p>Share your hosted files with unique URLs</p>
+        </div>
+    </div>
+</section>
+
+<section class="cta">
+    <div class="cta-content">
+        <h2>Ready to Host Your HTML Files?</h2>
+        <p>Join now and start hosting your web pages in seconds!</p>
+        {% if 'username' not in session %}
+            <a href="{{ url_for('signup') }}" class="btn btn-primary">
+                <i class="fas fa-user-plus"></i> Create Free Account
+            </a>
+        {% else %}
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+                <i class="fas fa-upload"></i> Upload Files
+            </a>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
+
+        <main>
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <div class="alerts">
+                        {% for message in messages %}
+                            <div class="alert alert-error">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <div class="upload-section">
+                <form method="POST" action="{{ url_for('upload_file') }}" enctype="multipart/form-data" class="upload-form">
+                    <div class="file-input-wrapper">
+                        <input type="file" name="file" id="file" accept=".html,.htm" required>
+                        <label for="file" class="file-label">
+                            <span class="upload-icon">📁</span>
+                            <span class="upload-text">Choose HTML File</span>
+                        </label>
+                    </div>
+                    
+                    <button type="submit" class="upload-btn">
+                        <span class="btn-icon">🚀</span>
+                        Upload & Host
+                    </button>
+                </form>
+            </div>            <div class="info-section">
+                <h3>📋 Instructions</h3>
+                <ul>
+                    <li>Select an HTML file (.html or .htm)</li>
+                    <li>Maximum file size: 16MB</li>
+                    <li>Get instant access URL after upload</li>
+                    <li>Your files are private and only accessible by you</li>
+                </ul>
+            </div>
+
+            <div class="files-section">
+                <h3>🗂️ Your Hosted Files</h3>
+                {% set user = get_user_by_username(session['username']) %}
+                {% if user and user.files %}
+                    <div class="files-list">
+                        {% for file in user.files %}
+                            <div class="file-item">
+                                <span class="file-name">{{ file.original_name }}</span>
+                                <a href="{{ url_for('serve_file', filename=file.stored_name) }}" target="_blank" class="view-link">View</a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="no-files">You haven't uploaded any files yet.</p>
+                {% endif %}
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2024 HTML Hosting Service</p>
+        </footer>
+    </div>
+
+    <script>
+        // File input enhancement
+        const fileInput = document.getElementById('file');
+        const fileLabel = document.querySelector('.file-label .upload-text');
+        
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                fileLabel.textContent = this.files[0].name;
+            } else {
+                fileLabel.textContent = 'Choose HTML File';
+            }
+        });
+    </script>
+</body>
+</html>
