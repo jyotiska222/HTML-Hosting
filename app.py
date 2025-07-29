@@ -36,6 +36,19 @@ def get_user_by_username(username):
             return user
     return None
 
+def get_file_owner(filename):
+    """Get the owner of a specific file"""
+    users_data = load_users()
+    for user in users_data["users"]:
+        for file_info in user["files"]:
+            if file_info["stored_name"] == filename:
+                return user["username"]
+    return None
+
+def user_owns_file(username, filename):
+    """Check if a user owns a specific file"""
+    return get_file_owner(filename) == username
+
 # Make get_user_by_username available in templates
 app.jinja_env.globals.update(get_user_by_username=get_user_by_username)
 
@@ -122,17 +135,25 @@ def serve_file(filename):
         # Verify the file exists in our system by checking if any user has uploaded it
         users_data = load_users()
         file_exists = False
+        file_owner = None
         
         for user in users_data["users"]:
             if any(f['stored_name'] == filename for f in user['files']):
                 file_exists = True
+                file_owner = user['username']
                 break
         
         if not file_exists:
             return render_template('error.html', 
                                 error_message="File not found or has been removed."), 404
-                                
-        return send_from_directory(UPLOAD_FOLDER, filename)
+        
+        # Add security headers to prevent modification
+        response = send_from_directory(UPLOAD_FOLDER, filename)
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+        response.headers['X-File-Owner'] = file_owner  # Custom header to identify owner
+        
+        return response
     except FileNotFoundError:
         return render_template('error.html', 
                              error_message="File not found"), 404
@@ -341,6 +362,135 @@ def list_files():
             })
     
     return jsonify(all_files)
+
+@app.route('/edit/<filename>')
+def edit_file(filename):
+    """Edit HTML file - only accessible by file owner"""
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    # Check if user owns this file
+    if not user_owns_file(session['username'], filename):
+        return render_template('error.html', 
+                             error_message="Access denied. You can only edit files you created."), 403
+    
+    # Check if file exists
+    filepath = os.path.join(UPLOAD_FOLDER, filename)
+    if not os.path.exists(filepath):
+        return render_template('error.html', 
+                             error_message="File not found"), 404
+    
+    # Read file content
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Get original filename
+        users_data = load_users()
+        original_name = filename
+        for user in users_data["users"]:
+            if user["username"] == session["username"]:
+                for file_info in user["files"]:
+                    if file_info["stored_name"] == filename:
+                        original_name = file_info["original_name"]
+                        break
+                break
+        
+        return render_template('edit.html', 
+                             filename=filename,
+                             original_name=original_name,
+                             content=content)
+    
+    except Exception as e:
+        app.logger.error(f"Edit file error: {str(e)}")
+        return render_template('error.html', 
+                             error_message="Error reading file"), 500
+
+@app.route('/update-file', methods=['POST'])
+def update_file():
+    """Update HTML file content - only accessible by file owner"""
+    if 'username' not in session:
+        return jsonify({'success': False, 'error': 'Not logged in'}), 401
+    
+    try:
+        filename = request.form.get('filename')
+        new_content = request.form.get('content')
+        
+        if not filename or not new_content:
+            return jsonify({'success': False, 'error': 'Missing filename or content'}), 400
+        
+        # Check if user owns this file
+        if not user_owns_file(session['username'], filename):
+            return jsonify({'success': False, 'error': 'Access denied. You can only edit files you created.'}), 403
+        
+        # Update file content
+        filepath = os.path.join(UPLOAD_FOLDER, filename)
+        if not os.path.exists(filepath):
+            return jsonify({'success': False, 'error': 'File not found'}), 404
+        
+        # Create backup before updating
+        backup_path = filepath + '.backup'
+        if os.path.exists(filepath):
+            import shutil
+            shutil.copy2(filepath, backup_path)
+        
+        # Write new content
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write(new_content)
+        
+        # Remove backup if write was successful
+        if os.path.exists(backup_path):
+            os.remove(backup_path)
+        
+        return jsonify({
+            'success': True, 
+            'message': 'File updated successfully!',
+            'url': url_for('serve_file', filename=filename, _external=True)
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Update file error: {str(e)}")
+        # Restore from backup if it exists
+        backup_path = os.path.join(UPLOAD_FOLDER, filename + '.backup')
+        if os.path.exists(backup_path):
+            import shutil
+            shutil.move(backup_path, os.path.join(UPLOAD_FOLDER, filename))
+        
+        return jsonify({
+            'success': False,
+            'error': 'An error occurred while updating the file'
+        }), 500
+
+@app.route('/file-info/<filename>')
+def file_info(filename):
+    """Get file information including owner - for security checks"""
+    if 'username' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+    
+    owner = get_file_owner(filename)
+    if not owner:
+        return jsonify({'error': 'File not found'}), 404
+    
+    can_edit = user_owns_file(session['username'], filename)
+    
+    # Get file details
+    users_data = load_users()
+    original_name = filename
+    for user in users_data["users"]:
+        for file_info in user["files"]:
+            if file_info["stored_name"] == filename:
+                original_name = file_info["original_name"]
+                break
+    
+    return jsonify({
+        'filename': filename,
+        'original_name': original_name,
+        'owner': owner,
+        'can_edit': can_edit,
+        'current_user': session['username'],
+        'view_url': url_for('serve_file', filename=filename, _external=True),
+        'edit_url': url_for('edit_file', filename=filename, _external=True) if can_edit else None
+    })
 
 
 

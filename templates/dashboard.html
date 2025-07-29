@@ -74,12 +74,17 @@
                                        title="View hosted file">
                                         <i class="fas fa-external-link-alt"></i> View
                                     </a>
-                                    <button class="btn btn-secondary btn-sm copy-url-btn"
+                                    <a href="{{ url_for('edit_file', filename=file.stored_name) }}" 
+                                       class="btn btn-warning btn-sm"
+                                       title="Edit file (only you can edit your files)">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                    <button type="button" class="btn btn-secondary btn-sm copy-url-btn"
                                             data-url="{{ url_for('serve_file', filename=file.stored_name, _external=True) }}"
                                             title="Copy URL to clipboard">
                                         <i class="fas fa-copy"></i> Copy URL
                                     </button>
-                                    <button class="btn btn-danger btn-sm delete-btn"
+                                    <button type="button" class="btn btn-danger btn-sm delete-btn"
                                             data-filename="{{ file.stored_name }}"
                                             data-original-name="{{ file.original_name }}"
                                             title="Delete file">
