@@ -111,16 +111,20 @@ def upload_file():
 
 @app.route('/view/<filename>')
 def serve_file(filename):
-    """Serve uploaded HTML files"""
-    if 'username' not in session:
-        return redirect(url_for('login'))
-        
+    """Serve uploaded HTML files - publicly accessible"""
     try:
-        # Check if the file belongs to the current user
-        user = get_user_by_username(session['username'])
-        if not user or not any(f['stored_name'] == filename for f in user['files']):
+        # Verify the file exists in our system by checking if any user has uploaded it
+        users_data = load_users()
+        file_exists = False
+        
+        for user in users_data["users"]:
+            if any(f['stored_name'] == filename for f in user['files']):
+                file_exists = True
+                break
+        
+        if not file_exists:
             return render_template('error.html', 
-                                error_message="Access denied. This file does not belong to you."), 403
+                                error_message="File not found or has been removed."), 404
                                 
         return send_from_directory(UPLOAD_FOLDER, filename)
     except FileNotFoundError:

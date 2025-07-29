@@ -1,18 +1,16 @@
-<!-- dashboard.html -->
-
 {% extends "base.html" %}
 
 {% block title %}Dashboard - HTML Host{% endblock %}
 
 {% block content %}
-<div class="dashboard">
+<div class="dashboard fade-in">
     <div class="dashboard-header">
         <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
-        <p>Manage your hosted HTML files</p>
+        <p>Manage and organize your hosted HTML files</p>
     </div>
 
     <div class="dashboard-grid">
-        <div class="upload-card">
+        <div class="upload-card card">
             <div class="card-header">
                 <h2><i class="fas fa-cloud-upload-alt"></i> Upload New File</h2>
             </div>
@@ -22,7 +20,10 @@
                         <input type="file" name="file" id="file" accept=".html,.htm" required>
                         <label for="file" class="file-label">
                             <i class="fas fa-file-code"></i>
-                            <span class="upload-text">Choose HTML File</span>
+                            <div>
+                                <span class="upload-text">Choose HTML File</span>
+                                <span class="upload-subtext">or drag and drop here</span>
+                            </div>
                         </label>
                     </div>
                     
@@ -36,35 +37,52 @@
                     <ul>
                         <li>Accepted formats: .html, .htm</li>
                         <li>Maximum file size: 16MB</li>
-                        <li>Files are private to your account</li>
+                        <li>Files are publicly accessible via URL</li>
                         <li>Get instant hosting URL after upload</li>
+                        <li>Manage all your files from this dashboard</li>
                     </ul>
                 </div>
             </div>
         </div>
 
-        <div class="files-card">
+        <div class="files-card card">
             <div class="card-header">
                 <h2><i class="fas fa-folder-open"></i> Your Files</h2>
+                <div class="editor-tools">
+                    <a href="{{ url_for('create_page') }}" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-plus"></i> Create New
+                    </a>
+                </div>
             </div>
             <div class="card-content">
                 {% set user = get_user_by_username(session['username']) %}
                 {% if user and user.files %}
                     <div class="files-list">
                         {% for file in user.files %}
-                            <div class="file-item">
+                            <div class="file-item fade-in-up">
                                 <div class="file-info">
                                     <i class="fas fa-file-code"></i>
-                                    <span class="file-name">{{ file.original_name }}</span>
-                                </div>                                <div class="file-actions">
+                                    <div class="file-details">
+                                        <span class="file-name">{{ file.original_name }}</span>
+                                        <span class="file-url">{{ url_for('serve_file', filename=file.stored_name, _external=True) }}</span>
+                                    </div>
+                                </div>
+                                <div class="file-actions">
                                     <a href="{{ url_for('serve_file', filename=file.stored_name) }}" 
                                        target="_blank" 
-                                       class="btn btn-secondary btn-sm">
+                                       class="btn btn-secondary btn-sm"
+                                       title="View hosted file">
                                         <i class="fas fa-external-link-alt"></i> View
                                     </a>
+                                    <button class="btn btn-secondary btn-sm copy-url-btn"
+                                            data-url="{{ url_for('serve_file', filename=file.stored_name, _external=True) }}"
+                                            title="Copy URL to clipboard">
+                                        <i class="fas fa-copy"></i> Copy URL
+                                    </button>
                                     <button class="btn btn-danger btn-sm delete-btn"
                                             data-filename="{{ file.stored_name }}"
-                                            data-original-name="{{ file.original_name }}">
+                                            data-original-name="{{ file.original_name }}"
+                                            title="Delete file">
                                         <i class="fas fa-trash-alt"></i> Delete
                                     </button>
                                 </div>
@@ -74,8 +92,9 @@
                 {% else %}
                     <div class="empty-state">
                         <i class="fas fa-folder-open"></i>
-                        <p>You haven't uploaded any files yet.</p>
+                        <h3>No files yet</h3>
                         <p>Upload your first HTML file to get started!</p>
+                        <p>You can upload files or create new ones using our built-in editor.</p>
                     </div>
                 {% endif %}
             </div>
@@ -83,7 +102,8 @@
     </div>
 </div>
 
-<script>    // File input enhancement
+<script>
+    // File input enhancement
     const fileInput = document.getElementById('file');
     const fileLabel = document.querySelector('.upload-text');
     
@@ -95,13 +115,105 @@
         }
     });
 
+    // Drag and drop functionality
+    const fileInputWrapper = document.querySelector('.file-input-wrapper');
+    const fileInputLabel = document.querySelector('.file-label');
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        fileInputWrapper.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        fileInputWrapper.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        fileInputWrapper.addEventListener(eventName, unhighlight, false);
+    });
+
+    function highlight(e) {
+        fileInputLabel.style.borderColor = 'var(--primary)';
+        fileInputLabel.style.background = 'var(--bg-tertiary)';
+    }
+
+    function unhighlight(e) {
+        fileInputLabel.style.borderColor = 'var(--border)';
+        fileInputLabel.style.background = 'var(--bg-secondary)';
+    }
+
+    fileInputWrapper.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files.length > 0) {
+            fileInput.files = files;
+            fileLabel.textContent = files[0].name;
+        }
+    }
+
+    // Copy URL functionality
+    document.querySelectorAll('.copy-url-btn').forEach(button => {
+        button.addEventListener('click', async function() {
+            const url = this.dataset.url;
+            
+            try {
+                await navigator.clipboard.writeText(url);
+                
+                // Visual feedback
+                const originalHTML = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                this.style.background = 'var(--success)';
+                this.style.color = 'white';
+                
+                setTimeout(() => {
+                    this.innerHTML = originalHTML;
+                    this.style.background = '';
+                    this.style.color = '';
+                }, 2000);
+                
+            } catch (err) {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = url;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                // Visual feedback
+                const originalHTML = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                this.style.background = 'var(--success)';
+                this.style.color = 'white';
+                
+                setTimeout(() => {
+                    this.innerHTML = originalHTML;
+                    this.style.background = '';
+                    this.style.color = '';
+                }, 2000);
+            }
+        });
+    });
+
     // Delete file functionality
     document.querySelectorAll('.delete-btn').forEach(button => {
         button.addEventListener('click', async function() {
             const filename = this.dataset.filename;
             const originalName = this.dataset.originalName;
             
-            if (confirm(`Are you sure you want to delete "${originalName}"?`)) {
+            if (confirm(`Are you sure you want to delete "${originalName}"?\n\nThis action cannot be undone.`)) {
+                // Show loading state
+                const originalHTML = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+                this.disabled = true;
+                
                 try {
                     const response = await fetch('{{ url_for("delete_file") }}', {
                         method: 'POST',
@@ -116,27 +228,56 @@
                     const data = await response.json();
                     
                     if (data.success) {
-                        // Remove the file item from the UI
-                        this.closest('.file-item').remove();
+                        // Animate removal
+                        const fileItem = this.closest('.file-item');
+                        fileItem.style.transition = 'all 0.3s ease';
+                        fileItem.style.transform = 'translateX(-100%)';
+                        fileItem.style.opacity = '0';
                         
-                        // If no files left, show empty state
-                        const filesList = document.querySelector('.files-list');
-                        if (!filesList.children.length) {
-                            filesList.innerHTML = `
-                                <div class="empty-state">
-                                    <i class="fas fa-folder-open"></i>
-                                    <p>You haven't uploaded any files yet.</p>
-                                    <p>Upload your first HTML file to get started!</p>
-                                </div>
-                            `;
-                        }
+                        setTimeout(() => {
+                            fileItem.remove();
+                            
+                            // If no files left, show empty state
+                            const filesList = document.querySelector('.files-list');
+                            if (!filesList || !filesList.children.length) {
+                                const cardContent = document.querySelector('.files-card .card-content');
+                                cardContent.innerHTML = `
+                                    <div class="empty-state">
+                                        <i class="fas fa-folder-open"></i>
+                                        <h3>No files yet</h3>
+                                        <p>Upload your first HTML file to get started!</p>
+                                        <p>You can upload files or create new ones using our built-in editor.</p>
+                                    </div>
+                                `;
+                            }
+                        }, 300);
+                        
                     } else {
                         alert(data.error || 'Failed to delete file');
+                        this.innerHTML = originalHTML;
+                        this.disabled = false;
                     }
                 } catch (error) {
                     alert('Error deleting file: ' + error);
+                    this.innerHTML = originalHTML;
+                    this.disabled = false;
                 }
             }
+        });
+    });
+
+    // Add fade-in animation to file items
+    document.addEventListener('DOMContentLoaded', function() {
+        const fileItems = document.querySelectorAll('.file-item');
+        fileItems.forEach((item, index) => {
+            item.style.opacity = '0';
+            item.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                item.style.transition = 'all 0.5s ease';
+                item.style.opacity = '1';
+                item.style.transform = 'translateY(0)';
+            }, index * 100);
         });
     });
 </script>

@@ -1,24 +1,28 @@
-<!-- create.html -->
-
 {% extends "base.html" %}
 
 {% block title %}Create Page - HTML Host{% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material-darker.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/css/css.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/htmlmixed/htmlmixed.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closetag.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldgutter.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/xml-fold.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldgutter.min.css">
 {% endblock %}
 
 {% block content %}
-<div class="create-page">
+<div class="create-page fade-in">
     <div class="create-header">
         <h1><i class="fas fa-code"></i> Create HTML Page</h1>
-        <p>Create, edit, and host your HTML pages with a live preview</p>
+        <p>Build and preview your HTML pages with our powerful editor</p>
     </div>
 
     <div class="create-grid">
@@ -28,17 +32,24 @@
                 <div class="card-header">
                     <h2><i class="fas fa-edit"></i> HTML Editor</h2>
                     <div class="editor-tools">
-                        <button type="button" id="insertTemplateBtn" class="btn btn-secondary" title="Insert basic HTML template">
+                        <button type="button" id="insertTemplateBtn" class="btn btn-secondary btn-sm" title="Insert basic HTML template">
                             <i class="fas fa-file-code"></i> Template
                         </button>
-                        <button type="button" id="formatBtn" class="btn btn-secondary" title="Format code">
+                        <button type="button" id="formatBtn" class="btn btn-secondary btn-sm" title="Format code">
                             <i class="fas fa-align-left"></i> Format
+                        </button>
+                        <button type="button" id="clearBtn" class="btn btn-secondary btn-sm" title="Clear editor">
+                            <i class="fas fa-trash"></i> Clear
                         </button>
                     </div>
                 </div>
                 <div class="card-content">
                     <div class="editor-container">
-                        <textarea id="htmlEditor" placeholder="Paste or write your HTML code here..."></textarea>
+                        <textarea id="htmlEditor" placeholder="Start typing your HTML code here..."></textarea>
+                    </div>
+                    <div class="editor-status">
+                        <span id="editorStatus">Ready</span>
+                        <span id="lineCount">Lines: 0</span>
                     </div>
                 </div>
             </div>
@@ -46,25 +57,44 @@
 
         <!-- Preview Section -->
         <div class="preview-section">
-            <div class="card">                <div class="card-header">
-                    <h2><i class="fas fa-eye"></i> Preview</h2>
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-eye"></i> Live Preview</h2>
                     <div class="editor-tools">
-                        <button type="button" id="previewBtn" class="btn btn-secondary" title="Update preview">
-                            <i class="fas fa-sync"></i> Refresh Preview
+                        <button type="button" id="previewBtn" class="btn btn-secondary btn-sm" title="Refresh preview">
+                            <i class="fas fa-sync"></i> Refresh
                         </button>
-                        <button type="button" id="newWindowBtn" class="btn btn-secondary" title="Open preview in new window">
-                            <i class="fas fa-external-link-alt"></i> Open in Window
+                        <button type="button" id="newWindowBtn" class="btn btn-secondary btn-sm" title="Open in new window">
+                            <i class="fas fa-external-link-alt"></i> New Window
+                        </button>
+                        <button type="button" id="fullscreenBtn" class="btn btn-secondary btn-sm" title="Toggle fullscreen preview">
+                            <i class="fas fa-expand"></i> Fullscreen
                         </button>
                     </div>
                 </div>
                 <div class="card-content">
-                    <div class="preview-container">
-                        <iframe id="previewFrame" title="HTML Preview" sandbox="allow-same-origin allow-scripts"></iframe>
+                    <div class="preview-container" id="previewContainer">
+                        <iframe id="previewFrame" title="HTML Preview" sandbox="allow-same-origin allow-scripts allow-forms"></iframe>
+                        <div class="preview-overlay" id="previewOverlay">
+                            <div class="preview-message">
+                                <i class="fas fa-code"></i>
+                                <h3>Start Coding</h3>
+                                <p>Your HTML preview will appear here as you type</p>
+                            </div>
+                        </div>
                     </div>
                     <div class="preview-actions">
                         <div class="filename-group">
-                            <label for="filename" class="filename-label">Filename:</label>
-                            <input type="text" id="filename" placeholder="Enter filename (optional)" class="filename-input">
+                            <label for="filename" class="filename-label">
+                                <i class="fas fa-file"></i> Filename:
+                            </label>
+                            <input type="text" 
+                                   id="filename" 
+                                   placeholder="my-awesome-page" 
+                                   class="filename-input"
+                                   pattern="[a-zA-Z0-9_-]+"
+                                   title="Only letters, numbers, underscores, and hyphens allowed">
+                            <span class="filename-extension">.html</span>
                         </div>
                         <button class="btn btn-primary" id="saveBtn">
                             <i class="fas fa-cloud-upload-alt"></i> Save & Host
@@ -77,78 +107,293 @@
 </div>
 
 <script>
-    // Initialize CodeMirror
+    // Initialize CodeMirror with enhanced features
     const editor = CodeMirror.fromTextArea(document.getElementById('htmlEditor'), {
         mode: 'htmlmixed',
-        theme: 'material',
+        theme: 'material-darker',
         lineNumbers: true,
         autoCloseTags: true,
         autoCloseBrackets: true,
-        indentUnit: 4,
-        lineWrapping: true
+        indentUnit: 2,
+        lineWrapping: true,
+        foldGutter: true,
+        gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+        extraKeys: {
+            "Ctrl-Space": "autocomplete",
+            "F11": function(cm) {
+                cm.setOption("fullScreen", !cm.getOption("fullScreen"));
+            },
+            "Esc": function(cm) {
+                if (cm.getOption("fullScreen")) cm.setOption("fullScreen", false);
+            }
+        }
     });
+
+    // UI Elements
+    const previewFrame = document.getElementById('previewFrame');
+    const previewOverlay = document.getElementById('previewOverlay');
+    const previewContainer = document.getElementById('previewContainer');
+    const editorStatus = document.getElementById('editorStatus');
+    const lineCount = document.getElementById('lineCount');
+    const saveBtn = document.getElementById('saveBtn');
+    const filenameInput = document.getElementById('filename');
+
+    // Update editor status
+    function updateEditorStatus() {
+        const doc = editor.getDoc();
+        const lines = doc.lineCount();
+        const content = editor.getValue();
+        
+        lineCount.textContent = `Lines: ${lines}`;
+        
+        if (content.trim() === '') {
+            editorStatus.textContent = 'Ready';
+            if (previewOverlay) previewOverlay.style.display = 'flex';
+        } else {
+            editorStatus.textContent = 'Editing';
+            if (previewOverlay) previewOverlay.style.display = 'none';
+        }
+    }
 
     // Insert Template
     document.getElementById('insertTemplateBtn').addEventListener('click', () => {
         const template = `<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Page</title>
-    <style>
-        /* Add your CSS here */
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Awesome Page</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+    
+    .container {
+      background: white;
+      padding: 3rem;
+      border-radius: 1rem;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+    
+    h1 {
+      color: #2d3748;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    
+    .highlight {
+      background: linear-gradient(120deg, #a8edea 0%, #fed6e3 100%);
+      padding: 0.2rem 0.5rem;
+      border-radius: 0.25rem;
+    }
+  </style>
 </head>
 <body>
-    <!-- Add your content here -->
+  <div class="container">
+    <h1>Welcome to <span class="highlight">HTML Host</span></h1>
+    <p>This is your new HTML page! You can edit this template or start from scratch.</p>
     
+    <h2>Getting Started</h2>
+    <ul>
+      <li>Edit the HTML in the left panel</li>
+      <li>See your changes in real-time</li>
+      <li>Save and host when you're ready</li>
+    </ul>
+    
+    <p><strong>Happy coding!</strong> 🚀</p>
+  </div>
 </body>
 </html>`;
-        editor.setValue(template);
-        updatePreview();
-    });    // Preview functions
+        
+        if (editor.getValue().trim() === '' || confirm('This will replace your current code. Continue?')) {
+            editor.setValue(template);
+            updatePreview();
+            updateEditorStatus();
+        }
+    });
+
+    // Clear editor
+    document.getElementById('clearBtn').addEventListener('click', () => {
+        if (editor.getValue().trim() === '' || confirm('This will clear all your code. Continue?')) {
+            editor.setValue('');
+            updatePreview();
+            updateEditorStatus();
+            filenameInput.value = '';
+        }
+    });
+
+    // Preview functions
     function updatePreview() {
-        const previewFrame = document.getElementById('previewFrame');
         const content = editor.getValue();
-        const blob = new Blob([content], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        previewFrame.src = url;
-        return url;
+        
+        if (content.trim() === '') {
+            previewFrame.src = 'about:blank';
+            previewOverlay.style.display = 'flex';
+            return;
+        }
+        
+        try {
+            const blob = new Blob([content], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            previewFrame.src = url;
+            previewOverlay.style.display = 'none';
+            
+            // Clean up previous blob URLs
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            
+            return url;
+        } catch (error) {
+            console.error('Preview update failed:', error);
+            editorStatus.textContent = 'Preview Error';
+        }
     }
 
-    // Preview button click handler
-    document.getElementById('previewBtn').addEventListener('click', updatePreview);
+    // Debounced preview update
+    let previewTimeout;
+    function debouncedPreviewUpdate() {
+        clearTimeout(previewTimeout);
+        previewTimeout = setTimeout(updatePreview, 300);
+    }
 
-    // Open in new window button click handler
+    // Manual preview refresh
+    document.getElementById('previewBtn').addEventListener('click', () => {
+        updatePreview();
+        
+        // Visual feedback
+        const btn = document.getElementById('previewBtn');
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check"></i> Refreshed';
+        setTimeout(() => {
+            btn.innerHTML = originalHTML;
+        }, 1000);
+    });
+
+    // Open in new window
     document.getElementById('newWindowBtn').addEventListener('click', () => {
-        const url = updatePreview();
-        const previewWindow = window.open(url, '_blank', 'width=800,height=600');
+        const content = editor.getValue();
+        if (content.trim() === '') {
+            alert('Please add some HTML content first.');
+            return;
+        }
+        
+        const blob = new Blob([content], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const previewWindow = window.open(url, '_blank', 'width=1000,height=700,scrollbars=yes,resizable=yes');
+        
         if (previewWindow) {
             previewWindow.focus();
+            // Clean up blob URL after window is opened
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
         } else {
             alert('Pop-up blocked. Please allow pop-ups to open the preview in a new window.');
         }
     });
 
-    // Format Code
+    // Fullscreen preview toggle
+    document.getElementById('fullscreenBtn').addEventListener('click', () => {
+        const btn = document.getElementById('fullscreenBtn');
+        const icon = btn.querySelector('i');
+        
+        if (previewContainer.classList.contains('fullscreen')) {
+            previewContainer.classList.remove('fullscreen');
+            icon.className = 'fas fa-expand';
+            btn.title = 'Enter fullscreen preview';
+        } else {
+            previewContainer.classList.add('fullscreen');
+            icon.className = 'fas fa-compress';
+            btn.title = 'Exit fullscreen preview';
+        }
+    });
+
+    // Format Code (basic formatting)
     document.getElementById('formatBtn').addEventListener('click', () => {
-        const formatted = html_beautify(editor.getValue(), {
-            indent_size: 4,
-            wrap_line_length: 80
-        });
-        editor.setValue(formatted);
-        updatePreview();
+        try {
+            const content = editor.getValue();
+            if (content.trim() === '') return;
+            
+            // Basic HTML formatting
+            let formatted = content
+                .replace(/></g, '>\n<')
+                .replace(/^\s+|\s+$/gm, '')
+                .split('\n')
+                .filter(line => line.trim() !== '')
+                .map((line, index, array) => {
+                    const trimmed = line.trim();
+                    let indent = 0;
+                    
+                    // Calculate indentation based on tag nesting
+                    for (let i = 0; i < index; i++) {
+                        const prevLine = array[i].trim();
+                        if (prevLine.match(/<[^\/][^>]*[^\/]>$/)) indent++;
+                        if (prevLine.match(/<\/[^>]+>$/)) indent--;
+                    }
+                    
+                    if (trimmed.match(/^<\/[^>]+>$/)) indent--;
+                    
+                    return '  '.repeat(Math.max(0, indent)) + trimmed;
+                })
+                .join('\n');
+            
+            editor.setValue(formatted);
+            updatePreview();
+            
+            // Visual feedback
+            const btn = document.getElementById('formatBtn');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i> Formatted';
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+            }, 1000);
+            
+        } catch (error) {
+            console.error('Formatting failed:', error);
+            alert('Code formatting failed. Please check your HTML syntax.');
+        }
+    });
+
+    // Filename validation
+    filenameInput.addEventListener('input', function() {
+        const value = this.value;
+        const isValid = /^[a-zA-Z0-9_-]*$/.test(value);
+        
+        if (!isValid && value !== '') {
+            this.style.borderColor = 'var(--danger)';
+            this.title = 'Only letters, numbers, underscores, and hyphens allowed';
+        } else {
+            this.style.borderColor = '';
+            this.title = '';
+        }
     });
 
     // Save & Host
-    document.getElementById('saveBtn').addEventListener('click', async () => {
-        const saveBtn = document.getElementById('saveBtn');
+    saveBtn.addEventListener('click', async () => {
         const content = editor.getValue();
-        const filename = document.getElementById('filename').value;
+        const filename = filenameInput.value.trim();
 
+        if (content.trim() === '') {
+            alert('Please add some HTML content before saving.');
+            editor.focus();
+            return;
+        }
+
+        // Validate filename
+        if (filename && !/^[a-zA-Z0-9_-]+$/.test(filename)) {
+            alert('Filename can only contain letters, numbers, underscores, and hyphens.');
+            filenameInput.focus();
+            return;
+        }
+
+        // Show loading state
         saveBtn.disabled = true;
         saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        editorStatus.textContent = 'Saving...';
 
         try {
             const response = await fetch('{{ url_for("save_generated") }}', {
@@ -158,35 +403,125 @@
                 },
                 body: new URLSearchParams({
                     html_content: content,
-                    filename: filename
+                    filename: filename || 'untitled'
                 })
             });
 
             const data = await response.json();
+            
             if (data.success) {
-                alert('File saved successfully!\nAccess URL: ' + data.url);
-                window.location.href = '{{ url_for("dashboard") }}';
+                // Success feedback
+                editorStatus.textContent = 'Saved Successfully!';
+                
+                // Show success modal instead of alert
+                const modal = document.createElement('div');
+                modal.className = 'success-modal';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <i class="fas fa-check-circle"></i>
+                            <h3>File Saved Successfully!</h3>
+                        </div>
+                        <div class="modal-body">
+                            <p>Your HTML page has been hosted and is now live.</p>
+                            <div class="url-display">
+                                <input type="text" value="${data.url}" readonly class="url-input">
+                                <button class="btn btn-secondary copy-url" data-url="${data.url}">
+                                    <i class="fas fa-copy"></i> Copy
+                                </button>
+                            </div>
+                        </div>
+                        <div class="modal-actions">
+                            <a href="${data.url}" target="_blank" class="btn btn-primary">
+                                <i class="fas fa-external-link-alt"></i> View Page
+                            </a>
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-tachometer-alt"></i> Go to Dashboard
+                            </a>
+                            <button class="btn btn-secondary close-modal">
+                                <i class="fas fa-times"></i> Close
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+                // Modal event listeners
+                modal.querySelector('.close-modal').addEventListener('click', () => {
+                    modal.remove();
+                });
+                
+                modal.querySelector('.copy-url').addEventListener('click', async function() {
+                    const url = this.dataset.url;
+                    try {
+                        await navigator.clipboard.writeText(url);
+                        this.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                        setTimeout(() => {
+                            this.innerHTML = '<i class="fas fa-copy"></i> Copy';
+                        }, 2000);
+                    } catch (err) {
+                        // Fallback
+                        modal.querySelector('.url-input').select();
+                        document.execCommand('copy');
+                        this.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                        setTimeout(() => {
+                            this.innerHTML = '<i class="fas fa-copy"></i> Copy';
+                        }, 2000);
+                    }
+                });
+                
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) modal.remove();
+                });
+                
             } else {
-                alert(data.error || 'Failed to save file');
+                throw new Error(data.error || 'Failed to save file');
             }
         } catch (error) {
-            alert('Error saving file: ' + error);
+            console.error('Save failed:', error);
+            alert('Error saving file: ' + error.message);
+            editorStatus.textContent = 'Save Failed';
         } finally {
             saveBtn.disabled = false;
             saveBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Save & Host';
         }
     });
-</script>
-{% endblock %}
 
-{% block scripts %}
-<script>
-    // Live preview on change
+    // Editor event listeners
     editor.on('change', () => {
-        updatePreview();
+        updateEditorStatus();
+        debouncedPreviewUpdate();
     });
 
-    // Initial preview
+    editor.on('cursorActivity', () => {
+        const cursor = editor.getCursor();
+        editorStatus.textContent = `Line ${cursor.line + 1}, Col ${cursor.ch + 1}`;
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey || e.metaKey) {
+            switch (e.key) {
+                case 's':
+                    e.preventDefault();
+                    saveBtn.click();
+                    break;
+                case 'Enter':
+                    if (e.shiftKey) {
+                        e.preventDefault();
+                        document.getElementById('previewBtn').click();
+                    }
+                    break;
+            }
+        }
+    });
+
+    // Initialize
+    updateEditorStatus();
     updatePreview();
+    
+    // Focus editor on load
+    setTimeout(() => editor.focus(), 100);
 </script>
 {% endblock %}
