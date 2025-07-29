@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Success - HTML Host</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="auth-logo">
+                    <i class="fas fa-check-circle" style="color: var(--success);"></i>
+                    <h1>Upload Success!</h1>
+                </div>
+                <div class="auth-welcome">
+                    <h2>Your file has been hosted successfully</h2>
+                    <p>Your HTML file is now live and accessible to everyone</p>
+                </div>
+            </div>
+
+            <div class="auth-form">
+                <div class="form-group">
+                    <label>
+                        <i class="fas fa-file-code"></i>
+                        File Name
+                    </label>
+                    <input type="text" value="{{ filename }}" readonly class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <i class="fas fa-link"></i>
+                        Public URL
+                    </label>
+                    <div class="url-display">
+                        <input type="text" value="{{ access_url }}" readonly class="url-input" id="urlInput">
+                        <button type="button" class="btn btn-secondary copy-url" onclick="copyUrl()">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <a href="{{ access_url }}" target="_blank" class="btn btn-primary">
+                        <i class="fas fa-external-link-alt"></i> View Your Page
+                    </a>
+                </div>
+            </div>
+
+            <div class="auth-links">
+                <p>
+                    <a href="{{ url_for('dashboard') }}">
+                        <i class="fas fa-tachometer-alt"></i>
+                        Go to Dashboard
+                    </a>
+                    |
+                    <a href="{{ url_for('index') }}">
+                        <i class="fas fa-home"></i>
+                        Back to Home
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function copyUrl() {
+            const urlInput = document.getElementById('urlInput');
+            const copyBtn = document.querySelector('.copy-url');
+            
+            urlInput.select();
+            urlInput.setSelectionRange(0, 99999); // For mobile devices
+            
+            try {
+                navigator.clipboard.writeText(urlInput.value).then(() => {
+                    copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                    copyBtn.style.background = 'var(--success)';
+                    copyBtn.style.color = 'white';
+                    
+                    setTimeout(() => {
+                        copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+                        copyBtn.style.background = '';
+                        copyBtn.style.color = '';
+                    }, 2000);
+                });
+            } catch (err) {
+                // Fallback for older browsers
+                document.execCommand('copy');
+                copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                copyBtn.style.background = 'var(--success)';
+                copyBtn.style.color = 'white';
+                
+                setTimeout(() => {
+                    copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+                    copyBtn.style.background = '';
+                    copyBtn.style.color = '';
+                }, 2000);
+            }
+        }
+    </script>
+</body>
+</html>
