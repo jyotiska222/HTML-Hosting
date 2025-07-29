@@ -113,6 +113,12 @@ def upload_file():
 def serve_file(filename):
     """Serve uploaded HTML files - publicly accessible"""
     try:
+        # First check if the file physically exists
+        filepath = os.path.join(UPLOAD_FOLDER, filename)
+        if not os.path.exists(filepath):
+            return render_template('error.html', 
+                                error_message="File not found"), 404
+        
         # Verify the file exists in our system by checking if any user has uploaded it
         users_data = load_users()
         file_exists = False
@@ -318,6 +324,23 @@ def logout():
     session.pop('username', None)
     flash('You have been logged out')
     return redirect(url_for('login'))
+
+@app.route('/files')
+def list_files():
+    """List all publicly available files - for debugging"""
+    users_data = load_users()
+    all_files = []
+    
+    for user in users_data["users"]:
+        for file_info in user["files"]:
+            all_files.append({
+                'original_name': file_info['original_name'],
+                'stored_name': file_info['stored_name'],
+                'url': url_for('serve_file', filename=file_info['stored_name'], _external=True),
+                'owner': user['username']
+            })
+    
+    return jsonify(all_files)
 
 
 
